@@ -107,14 +107,17 @@ const loginUser = asyncHandler(async (req, res) => {
     }
 
     const user = await User.findOne({
-        $or: [{email}, {username}]
-    })
+        $or: [{ username }, { email }]
+    }).select("+password")
 
     if(!user){
         throw new ApiError(404, "User not found")
     }
 
     const isPasswordValid = await user.isPasswordCorrect(password)
+
+    console.log("Entered:", password)
+    console.log("Stored:", user.password)
 
     if(!isPasswordValid){
         throw new ApiError(401, "password incorrect")
@@ -152,8 +155,8 @@ const logoutUser = asyncHandler(async(req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: {
-                refreshToken: undefined
+            $unset: {
+                refreshToken: 1 // this removes the refreshToken field from the user document in the database, effectively logging the user out by invalidating their refresh token.
             }
         },
         {
